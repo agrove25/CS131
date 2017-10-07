@@ -30,7 +30,9 @@ let rec computed_fixed_point eq f x = if (eq (f x) x)
 let rec computed_periodic_point eq f p x =
   let rec find_value f p x = 
     if (p = 0) then x else (find_value f (p-1) (f x)) in
-  if (eq (find_value f p x) x) then x else (computed_periodic_point eq f p (f x));;
+
+  let new_value = find_value f p x in  
+  if (eq new_value x) then x else (computed_periodic_point eq f p new_value);;
 
 let rec while_away s p x = 
   if p x then x :: while_away s p (s x) else [];;
@@ -44,23 +46,27 @@ type ('nonterminal, 'terminal) symbol =
   | T of 'terminal
 
 let filter_blind_alleys g =
-	(* symbol == symbol, terminals == symbol * (symbol list) list *)
-	(* this function checks the symbol. If it is a terminal or has a path to a terminal, it'll return true *)
-	let rec contains_symbol symbol terminals = match symbol with 
-	| T symbol -> true
-	| N symbol -> if (List.exists (fun x -> fst x = symbol) terminals) then true else false in
+  (* symbol == symbol, terminals == symbol * (symbol list) list *)
+  (* this function checks the symbol. If it is a terminal or has a path to a terminal, it'll return true *)
+  let rec contains_symbol symbol terminals = match symbol with 
+  | T symbol -> true
+  | N symbol -> if (List.exists (fun x -> fst x = symbol) terminals) then true else false in
 
-	(* rhs == symbol list, terminals == symbol * (symbol list) list *)
-	let rec is_terminal rhs terminals = match rhs with
-	|  [] -> true
-	|  h :: t -> if (contains_symbol h terminals) then (is_terminal t terminals) else false in  
+  (* rhs == symbol list, terminals == symbol * (symbol list) list *)
+  (* checks if the function is the rhs is a terminal set *)
+  let rec is_terminal rhs terminals = match rhs with
+  |  [] -> true
+  |  h :: t -> if (contains_symbol h terminals) then (is_terminal t terminals) else false in  
 
-	(* rules == symbol * (symbol list) list == snd g, terminals == symbol * (symbol list) list *)
-	let rec gen_terminals rules terminals = match rules with
-	|  [] -> terminals
-	|  h :: t -> if ((not (contains h terminals)) && (is_terminal (snd h) terminals))
-	             then gen_terminals t (h :: terminals) else gen_terminals t terminals in
+  (* rules == symbol * (symbol list) list == snd g, terminals == symbol * (symbol list) list *)
+  (* checks if the rule is safe and not a duplicate, if so, it'll add that rule to the terminals (i.e. the same rules) *)
+  let rec gen_terminals rules terminals = match rules with
+  |  [] -> terminals
+  |  h :: t -> if ((not (contains h terminals)) && (is_terminal (snd h) terminals))
+               then gen_terminals t (h :: terminals) else gen_terminals t terminals in
 
-	let g_terminals = computed_fixed_point (=) (gen_terminals (snd g)) [] in
+  (* g_terminals = symbol * (symbol list) list == the list of non-BA rules *)
+  let g_terminals = computed_fixed_point (=) (gen_terminals (snd g)) [] in  
 
-	(fst g, set_intersection (snd g) g_terminals);;
+  (* just filters the set of rules in such a way that preserves order *)
+  (fst g, set_intersection (snd g) g_terminals);;
