@@ -1,0 +1,64 @@
+In order to parse_prefix, I had to break down the large task to two main parts:
+
+1.	the actual matcher function that parse_prefix returns. This function has
+	 	to, at the very least, accept a grammar, an acceptor function, and a
+	 	fragment.
+
+		What this function would do, in its most base form, is simply
+		go through the alternative list that corresponds with a given
+		nonterminal, calling an another helper function to check whether
+		each RHS in that alternative list fits as a prefix (according to
+		the acceptor function).
+
+2.	this is the helper function (which in my program I called helper). 
+		Most of the heavy lfiting is done here, which can be broken up
+		to multiple outputs depending on the conditions of the arguments.
+
+		Firstly, if we run out of symbols within the RHS to parse through, 
+		we'll just run the acceptor function (which might not be the 
+		original acceptor function, but more on that later). If this returns Some, 
+		then we'll return Some all the way up through the numerous levels. 
+		Otherwise, it'll end up returning None to the matcher function 
+		that called it, that will	try the next RHS in that alternative list.
+
+		If it's a terminal symbol, then we check if it matches with the
+		first symbol in fragment. If it does, then so far so good, and we'll
+		check the next symbol in the given RHS against the next symbol in the
+		fragment. If not, then we know that this is an incorrect derivation,
+		and we'll return None all the way up to the matcher function that
+		called, that will try the next RHS in that alternative list.
+
+		If it's a nonterminal symbol, it gets really complicated really fast.
+		What has to happen is that we call the matcher function on the 
+		non terminal to get the alternative list for that nonterminal. However,
+		doing so in a regular fashion would cause the program to forget
+		about the other symbols that it must check in the current RHS. In order
+		to solve this, we use a curried version of the helper function in
+		the acceptor paramater in the matcher function. This allows
+		the program to remember what it still has to check, which will eventually
+		stream into the previous two paragraphs.
+
+This is really difficult to put into words, so I have attached an image in
+the parent directory. It shows a semblance of a control flow for
+the entire program in an extremely small test case where the grammar
+it entails is: S -> (N S1, T S2); S -> (N S3); S1 -> (T S11). And the
+fragment it is trying to match is [S11; S2]. (We assume that the program
+is trying to match the entire fragment).
+
+Using this method, although the logic gets quite overcomplicated, is really
+quite efficient in terms of programmer time. It's very short by relying
+heavily on recursion. Additionally, by putting the helper function inside
+the matcher function, it is much easier to send arguments to and from it,
+as much of the matcher arguments are not used nor changed between calls of
+checker (when iterating through the RHS for example). 
+
+Now, this approach does have its fair share of issues. Firstly, it is
+extremely prone to infinite loops due to its nature of checking from 
+left to right. As such, if we have a grammar that goes A -> A as its
+first rule, then it'll just do that forever. Another issue is that its
+really quite slow, due to recursive nature of the program. For example,
+in the small example that I have given in the above paragraph, it calls
+checker 5 times in the best case scenario (i.e. when all the rules
+that it needs to build the fragment comes first). This gets massively
+overcomplicated the more rules, and thereby incorrect paths the program
+can follow, is added.
