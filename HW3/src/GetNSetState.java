@@ -35,12 +35,15 @@ class GetNSetState implements State {
     }
 
     public boolean swap(int i, int j) {
-	if (value.get(i) <= 0 || value.get(j) >= maxval) {
-	    return false;
-	}
+        int a = value.get(i);
+        int b = value.get(j);	   
 
-	value.getAndDecrement(i);
-	value.getAndIncrement(j);
-	return true;
+        if (a <= 0 || b >= maxval) {
+    	   return false;
+        }
+
+    	value.set(i, --a);
+    	value.set(j, ++b);
+    	return true;
     }
 }
