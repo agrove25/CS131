@@ -40,11 +40,11 @@
 )
 
 (define (length-ld listdiff)
-  (define (len-accum ld accum)
+  (define (len-accum ld count)
     (if (null-ld? ld)
-      accum
+      count
       (if (listdiff? ld)
-        (len-accum (cdr-ld ld) (+ accum 1))
+        (len-accum (cdr-ld ld) (+ count 1))
         (error "Error.")
       )
     )
@@ -89,20 +89,20 @@
 (define (listdiff->list listdiff)
   (if (listdiff? listdiff)
     (take (car listdiff) (length-ld listdiff))
-    (error "Error.")
+    (error "Error. (listdiff->list)")
   )
 )
 
 (define (expr-returning listdiff)
-  (if (listdiff? listdiff)
-    `(cons ,(car listdiff) ,(cdr listdiff))
-    (error "Not a listdiff.")
+    (if (listdiff? listdiff)
+    `(cons ',(take (car listdiff) (length-ld listdiff)) '())
+    (error "Error (expr-return)")
   )
 )
 
 
 
-
+#|
 ; Test Cases
 (define ils (append '(a e i o u) 'y))
 (define d1 (cons ils (cdr (cdr ils))))
@@ -138,6 +138,8 @@
 (length-ld d6)                        ; ===>  3
 (length-ld d7)                        ; ===>  5
 
+(define ns (make-base-namespace))
+
 (define kv1 (cons d1 'a))
 (define kv2 (cons d2 'b))
 (define kv3 (cons d3 'c))
@@ -158,9 +160,7 @@
         (list ils d1 37))             ; ===>  #t
 (eq? (list-tail (car d6) 3) (cdr d6))  ;===>  #t
 
-(display (listdiff->list d1))
-(display e1)
-
-(listdiff->list (eval e1))             ;===>  (a e)
-(equal? (listdiff->list (eval e1))
+(listdiff->list (eval e1 ns))             ;===>  (a e)
+(equal? (listdiff->list (eval e1 ns))
         (listdiff->list d1))           ;===>  #t
+|#
